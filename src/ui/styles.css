@@ -34,6 +34,7 @@ body {
   display: block;
   width: 100%;
   height: 100%;
+  touch-action: none;
 }
 
 #ui-root {
@@ -280,4 +281,142 @@ body {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* ---------- Mode selector (main menu) ---------- */
+.mode-select {
+  display: flex;
+  gap: 12px;
+}
+.mode-btn {
+  pointer-events: auto;
+  font-family: var(--hud-font);
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  color: #cfeaff;
+  background: var(--panel);
+  border: 1px solid var(--accent-dim);
+  border-radius: 8px;
+  padding: 10px 22px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.mode-btn:hover {
+  border-color: var(--accent);
+}
+.mode-btn.selected {
+  color: #021018;
+  background: linear-gradient(90deg, #5fd0ff, #7fe0c0);
+  border-color: transparent;
+  box-shadow: 0 0 18px rgba(95, 208, 255, 0.5);
+  font-weight: 700;
+}
+
+/* ---------- Touch controls (mobile) ---------- */
+.touch-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  touch-action: none;
+}
+
+.touch-zone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 45%;
+  height: 100%;
+  pointer-events: auto;
+  touch-action: none;
+}
+.touch-hint {
+  position: absolute;
+  left: 24px;
+  bottom: 28px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.45;
+}
+
+.joy-base {
+  position: fixed;
+  width: 140px;
+  height: 140px;
+  margin: -70px 0 0 -70px;
+  border-radius: 50%;
+  border: 2px solid rgba(95, 208, 255, 0.5);
+  background: radial-gradient(circle, rgba(95, 208, 255, 0.12), rgba(8, 16, 28, 0.35));
+  box-shadow: 0 0 24px rgba(95, 208, 255, 0.3);
+  pointer-events: none;
+}
+.joy-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 60px;
+  height: 60px;
+  margin: -30px 0 0 -30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #7fe0ff, #2a6a8a);
+  box-shadow: 0 0 18px rgba(95, 208, 255, 0.7);
+}
+
+.touch-buttons {
+  position: absolute;
+  right: 22px;
+  bottom: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+  pointer-events: none;
+}
+.roll-row {
+  display: flex;
+  gap: 14px;
+}
+.touch-btn {
+  pointer-events: auto;
+  touch-action: none;
+  font-family: var(--hud-font);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #dff3ff;
+  border: 1.5px solid var(--accent-dim);
+  background: var(--panel);
+  border-radius: 50%;
+  width: 92px;
+  height: 92px;
+  font-size: 15px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+.touch-btn.small {
+  width: 60px;
+  height: 60px;
+  font-size: 22px;
+}
+.touch-btn.fire {
+  color: #fff;
+  border-color: #ff5b77;
+  background: radial-gradient(circle, rgba(255, 70, 102, 0.45), rgba(8, 16, 28, 0.7));
+  box-shadow: 0 0 20px rgba(255, 70, 102, 0.4);
+}
+.touch-btn.boost {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+.touch-btn.brake {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.touch-btn.active {
+  transform: scale(0.92);
+  box-shadow: 0 0 26px rgba(95, 208, 255, 0.8);
 }

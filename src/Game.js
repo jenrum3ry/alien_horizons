@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { FixedClock } from './core/Clock.js';
 import { Input } from './core/Input.js';
+import { TouchInput } from './core/TouchInput.js';
 import { SceneSetup } from './scene/SceneSetup.js';
 import { Starfield } from './scene/Starfield.js';
 import { Earth } from './scene/Earth.js';
@@ -20,7 +21,14 @@ const S = { MENU: 'menu', BRIEFING: 'briefing', PLAYING: 'playing', WON: 'won', 
 export class Game {
   constructor(canvas, uiRoot) {
     this.scene = new SceneSetup(canvas);
-    this.input = new Input(canvas);
+    // Two interchangeable input backends; the active one is chosen at the menu.
+    this.desktopInput = new Input(canvas);
+    this.touchInput = new TouchInput(uiRoot);
+    this.input = this.desktopInput;
+    this.mode = 'desktop';
+    // Default the menu selection to touch on touch-capable devices.
+    this.defaultMode =
+      'ontouchstart' in window || navigator.maxTouchPoints > 0 ? 'mobile' : 'desktop';
     this.clock = new FixedClock(1 / 60);
     this.chaseCam = new ThirdPersonCamera(this.scene.camera);
 
@@ -70,12 +78,16 @@ export class Game {
   // ---------- State transitions ----------
   _goMenu() {
     this.state = S.MENU;
-    this.input.setEnabled(false);
+    // Make sure neither input backend is grabbing controls behind the menu.
+    this.desktopInput.setEnabled(false);
+    this.touchInput.setEnabled(false);
     this.hud.hide();
-    this.menus.showMainMenu(() => this._startCampaign());
+    this.menus.showMainMenu((mode) => this._startCampaign(mode), this.defaultMode);
   }
 
-  _startCampaign() {
+  _startCampaign(mode = 'desktop') {
+    this.mode = mode;
+    this.input = mode === 'mobile' ? this.touchInput : this.desktopInput;
     this.missions.index = 0;
     this._goBriefing(0);
   }
@@ -89,7 +101,13 @@ export class Game {
       ? this.missions.mission
       : null;
     const m = mission || this._peekMission(index);
-    this.menus.showBriefing(m, index + 1, this.missions.total, () => this._startMission(index));
+    this.menus.showBriefing(
+      m,
+      index + 1,
+      this.missions.total,
+      () => this._startMission(index),
+      this.mode
+    );
   }
 
   _peekMission(index) {

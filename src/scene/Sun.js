@@ -49,9 +49,9 @@ export class Sun {
     this.corona = new THREE.Mesh(new THREE.SphereGeometry(9000, 48, 48), coronaMat);
     this.group.add(this.corona);
     this.coronaMat = coronaMat;
-
-    // Keep the star effectively "at infinity" — never culled by the far plane.
-    this.group.traverse((o) => (o.frustumCulled = false));
+    // The Sun (70000) sits well within the camera far plane (200000), so the
+    // default frustum culling correctly keeps it on-screen and skips it when
+    // it's behind the camera — no need to disable culling.
   }
 
   update(dt) {

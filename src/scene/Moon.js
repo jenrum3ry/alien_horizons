@@ -14,7 +14,9 @@ export class Moon {
         varying vec3 vNormal;
         varying vec3 vPos;
         void main() {
-          vNormal = normalize(normalMatrix * normal);
+          // World-space normal so the sun-lit terminator stays fixed in the
+          // world (uLightDir is world-space), not rotating with the camera.
+          vNormal = normalize(vec3(modelMatrix * vec4(normal, 0.0)));
           vPos = position;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }

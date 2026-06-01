@@ -62,6 +62,8 @@ export class HUD {
     this._tmp = new THREE.Vector3();
     this._tmpQ = new THREE.Quaternion();
     this._proj = new THREE.Vector3();
+    this._camDir = new THREE.Vector3();
+    this._toTarget = new THREE.Vector3();
   }
 
   _resizeMarkers() {
@@ -130,9 +132,14 @@ export class HUD {
     const cy = H / 2;
     const margin = 46;
 
+    camera.getWorldDirection(this._camDir);
+
     const drawOne = (worldPos, color, size) => {
+      // "Behind" via camera-forward dot, not projected z (objects past the far
+      // plane also have z > 1, which would falsely flip the arrow direction).
+      this._toTarget.copy(worldPos).sub(camera.position);
+      const behind = this._camDir.dot(this._toTarget) < 0;
       this._proj.copy(worldPos).project(camera);
-      const behind = this._proj.z > 1;
       let sx = (this._proj.x * 0.5 + 0.5) * W;
       let sy = (-this._proj.y * 0.5 + 0.5) * H;
       const onScreen = !behind && sx >= 0 && sx <= W && sy >= 0 && sy <= H;

@@ -5,6 +5,8 @@ import { TouchInput } from './core/TouchInput.js';
 import { SceneSetup } from './scene/SceneSetup.js';
 import { Starfield } from './scene/Starfield.js';
 import { Earth } from './scene/Earth.js';
+import { Sun } from './scene/Sun.js';
+import { Moon } from './scene/Moon.js';
 import { ThirdPersonCamera } from './scene/ThirdPersonCamera.js';
 import { PlayerShip } from './entities/PlayerShip.js';
 import { Mothership } from './entities/Mothership.js';
@@ -37,6 +39,12 @@ export class Game {
     this.scene.add(this.starfield.group);
     this.earth = new Earth();
     this.scene.add(this.earth.group);
+    // Celestial bodies for a fuller "in space" backdrop. The Sun sits along the
+    // scene's key-light direction so lighting stays consistent.
+    this.sun = new Sun(new THREE.Vector3(-1, 0.4, 0.6));
+    this.scene.add(this.sun.group);
+    this.moon = new Moon();
+    this.scene.add(this.moon.group);
 
     // Entities
     this.player = new PlayerShip();
@@ -284,6 +292,8 @@ export class Game {
       this.earth.update(dt);
     }
     this.starfield.update(this.scene.camera.position);
+    this.sun.update(dt);
+    this.moon.update(dt);
     this.scene.render();
   }
 }

@@ -16,33 +16,63 @@ export class Menus {
     return this.el.querySelector('.overlay');
   }
 
-  showMainMenu(onStart) {
+  showMainMenu(onStart, defaultMode = 'desktop') {
+    this._mode = defaultMode;
     this._overlay(`
       <div class="sub">Earth · Year 2099 · Final Defense</div>
       <h1>ALIEN HORIZONS</h1>
       <p>An armada has crossed the dark between stars. You are humanity's last interceptor pilot.
          Fly. Fight. Save the Earth.</p>
-      <button class="btn" data-start>Launch Campaign</button>
-      <div class="controls-help">
-        <b>Mouse</b><span>Steer (pitch / yaw)</span>
-        <b>Left Click</b><span>Fire lasers</span>
-        <b>Shift</b><span>Boost</span>
-        <b>Space</b><span>Air-brake</span>
-        <b>Q / E</b><span>Roll left / right</span>
-        <b>↑ / ↓</b><span>Throttle</span>
+
+      <div class="mode-select" data-modes>
+        <button class="mode-btn" data-mode="desktop">🖥️ Desktop</button>
+        <button class="mode-btn" data-mode="mobile">📱 Mobile</button>
       </div>
+
+      <div class="controls-help" data-controls></div>
+
+      <button class="btn" data-start>Launch Campaign</button>
     `);
-    this.el.querySelector('[data-start]').addEventListener('click', onStart);
+
+    const desktopHelp = `
+      <b>Mouse</b><span>Steer (pitch / yaw)</span>
+      <b>Left Click</b><span>Fire lasers</span>
+      <b>Shift</b><span>Boost</span>
+      <b>Space</b><span>Air-brake</span>
+      <b>Q / E</b><span>Roll left / right</span>
+      <b>↑ / ↓</b><span>Throttle</span>`;
+    const mobileHelp = `
+      <b>Left stick</b><span>Steer (pitch / yaw)</span>
+      <b>FIRE</b><span>Fire lasers</span>
+      <b>BOOST</b><span>Accelerate</span>
+      <b>BRAKE</b><span>Air-brake</span>
+      <b>⟲ / ⟳</b><span>Roll left / right</span>`;
+
+    const controls = this.el.querySelector('[data-controls]');
+    const modeBtns = [...this.el.querySelectorAll('[data-mode]')];
+    const applyMode = (mode) => {
+      this._mode = mode;
+      controls.innerHTML = mode === 'mobile' ? mobileHelp : desktopHelp;
+      modeBtns.forEach((b) => b.classList.toggle('selected', b.dataset.mode === mode));
+    };
+    modeBtns.forEach((b) => b.addEventListener('click', () => applyMode(b.dataset.mode)));
+    applyMode(defaultMode);
+
+    this.el.querySelector('[data-start]').addEventListener('click', () => onStart(this._mode));
   }
 
-  showBriefing(mission, missionNumber, total, onLaunch) {
+  showBriefing(mission, missionNumber, total, onLaunch, mode = 'desktop') {
+    const hint =
+      mode === 'mobile'
+        ? 'Left stick steers · hold FIRE to shoot'
+        : 'Click to lock controls · ESC releases the mouse';
     this._overlay(`
       <div class="sub">Mission ${missionNumber} of ${total}</div>
       <h2>${mission.name}</h2>
       <p>${mission.briefing}</p>
       <p class="objective" style="font-size:18px"><b>Objective:</b> ${mission.objective.label}</p>
       <button class="btn" data-launch>Begin Mission</button>
-      <div class="sub" style="margin-top:6px">Click to lock controls · ESC releases the mouse</div>
+      <div class="sub" style="margin-top:6px">${hint}</div>
     `);
     this.el.querySelector('[data-launch]').addEventListener('click', onLaunch);
   }

@@ -66,6 +66,14 @@ export class Game {
     this._tmpVec = new THREE.Vector3();
     this._collisionCtx = { tmp: new THREE.Vector3() };
 
+    // Lock-on aiming.
+    this.lockTarget = null;
+    this._camFwd = new THREE.Vector3();
+    this._toTgt = new THREE.Vector3();
+    this._aimPoint = new THREE.Vector3();
+    this.lockConeCos = Math.cos((26 * Math.PI) / 180); // acquire within ~26°
+    this.lockRange = 2600;
+
     this._bindEscape();
     this._goMenu();
   }
@@ -135,6 +143,7 @@ export class Game {
     this.earth.reset();
     this.player.reset(new THREE.Vector3(0, 60, 300));
     this.chaseCam.reset();
+    this.lockTarget = null;
     this.spawner.load(mission.waves);
 
     // Mothership for the boss mission.
@@ -191,7 +200,21 @@ export class Game {
 
     // Player
     this.player.update(dt, control);
-    if (control.fire) this.weapons.tryFirePlayer(this.player, dt);
+
+    // Lock-on: acquire the enemy closest to the ship's nose, then converge fire
+    // on it (or on a point straight ahead when nothing is locked). Based on the
+    // ship's forward vector, which is unambiguous — unlike the chase camera,
+    // whose per-frame `up` rewrite makes getWorldDirection() unreliable.
+    this._updateLock();
+    if (control.fire) {
+      if (this.lockTarget && this.lockTarget.alive) {
+        this._aimPoint.copy(this.lockTarget.position);
+      } else {
+        this.player.getForward(this._camFwd);
+        this._aimPoint.copy(this.player.position).addScaledVector(this._camFwd, 1800);
+      }
+      this.weapons.tryFirePlayer(this.player, dt, this._aimPoint);
+    }
 
     // Enemies AI + their fire.
     for (const e of this.enemies) {
@@ -232,6 +255,52 @@ export class Game {
     });
     if (verdict === 'won') this._win();
     else if (verdict === 'lost') this._lose();
+  }
+
+  // Pick the lock-on target: the live enemy (or mothership) nearest the ship's
+  // nose, within a cone and range.
+  _updateLock() {
+    this.player.getForward(this._camFwd); // ship forward = aim direction
+    if (this.lockTarget && (!this.lockTarget.alive || this._outOfLock(this.lockTarget))) {
+      this.lockTarget = null;
+    }
+    let best = this.lockTarget;
+    // Slight stickiness: an existing lock must be beaten by a clearly better one.
+    // A *new* candidate must also clear the acquisition cone (s > lockConeCos),
+    // so a target outside the cone can never steal the lock while the current
+    // one is lingering in the release-hysteresis band.
+    let bestScore = best ? this._lockScore(best) + 0.02 : this.lockConeCos;
+
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      const s = this._lockScore(e);
+      if (s > bestScore && s > this.lockConeCos) {
+        bestScore = s;
+        best = e;
+      }
+    }
+    if (this.mothership && this.mothership.alive) {
+      const s = this._lockScore(this.mothership);
+      if (s > bestScore && s > this.lockConeCos) {
+        bestScore = s;
+        best = this.mothership;
+      }
+    }
+    this.lockTarget = best;
+  }
+
+  // Cosine of the angle between the ship's nose and the target; -1 if out of
+  // range. Assumes this._camFwd holds the current ship-forward vector.
+  _lockScore(target) {
+    this._toTgt.copy(target.position).sub(this.player.position);
+    const dist = this._toTgt.length();
+    if (dist > this.lockRange || dist < 1) return -1;
+    this._toTgt.multiplyScalar(1 / dist);
+    return this._camFwd.dot(this._toTgt);
+  }
+
+  _outOfLock(target) {
+    return this._lockScore(target) < this.lockConeCos - 0.08; // small release hysteresis
   }
 
   _events() {
@@ -283,6 +352,7 @@ export class Game {
         mission: this.missions,
         camera: this.scene.camera,
         mothership: this.mothership,
+        lockTarget: this.lockTarget,
       });
     } else {
       // Slow orbit of Earth behind menus.

@@ -24,7 +24,10 @@ export class EnemyShip extends Entity {
       drone: { hp: 4, speed: 220, turn: 1.8, fireRate: 1.6, range: 500 },
     }[variant] || { hp: 8, speed: 180, turn: 1.4, fireRate: 1.2, range: 600 };
 
-    super(mesh, { faction: 'alien', radius: 4, hp: stats.hp });
+    // Scale the craft up so they read clearly on small (mobile) screens, and
+    // widen the collision radius to match.
+    mesh.scale.setScalar(2.0);
+    super(mesh, { faction: 'alien', radius: 9, hp: stats.hp });
     this.variant = variant;
     this.speed = stats.speed;
     this.turnRate = stats.turn;

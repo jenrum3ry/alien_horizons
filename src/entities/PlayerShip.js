@@ -10,19 +10,22 @@ export class PlayerShip extends Entity {
     super(mesh, { faction: 'player', radius: 4, hp: 100 });
 
     // Flight tuning.
-    this.baseThrust = 220;
-    this.boostThrust = 520;
-    this.maxSpeed = 360;
-    this.boostMaxSpeed = 640;
-    this.drag = 0.7; // per second linear damping factor
-    // Analog steering turn rates (radians/second) — applied dt-scaled.
-    this.pitchRate = 1.9;
-    this.yawRate = 1.7;
-    this.rollRate = 2.4;
-    this.mouseSensitivity = 0.0022; // mouse-look: radians per pixel
+    this.baseThrust = 190;
+    this.boostThrust = 460;
+    this.maxSpeed = 300;
+    this.boostMaxSpeed = 560;
+    this.drag = 0.8; // per second linear damping factor
+    // Analog steering turn rates (radians/second) — applied dt-scaled. Kept
+    // gentle so the touch stick / keys don't over-rotate the ship.
+    this.pitchRate = 1.5;
+    this.yawRate = 1.4;
+    this.rollRate = 2.2;
+    this.autoLevel = 1.8; // wings auto-level toward world up when not rolling
+    this.mouseSensitivity = 0.0018; // mouse-look: radians per pixel
     // Smoothing of the steering input for a less twitchy, weightier feel.
     this._smYaw = 0;
     this._smPitch = 0;
+    this._right = new THREE.Vector3();
 
     // Shields / hull.
     this.maxShield = 60;
@@ -74,8 +77,18 @@ export class PlayerShip extends Entity {
     const yaw = this._smYaw * this.yawRate * dt + lookYaw;
     const pitch = this._smPitch * this.pitchRate * dt + lookPitch;
 
+    // Auto-level: when the player isn't actively rolling, gently bring the wings
+    // back to horizontal. The ship's local +X (right) should have no world-Y
+    // component when level, so roll back proportional to that error. Hugely
+    // reduces "lost in a tumble" disorientation, especially on touch.
+    let roll = control.roll * this.rollRate * dt;
+    if (!control.roll) {
+      this._right.set(1, 0, 0).applyQuaternion(this.mesh.quaternion);
+      roll += -this._right.y * this.autoLevel * dt;
+    }
+
     // Apply as local rotations: pitch (X), yaw (Y), roll (Z).
-    this._euler.set(-pitch, -yaw, control.roll * this.rollRate * dt);
+    this._euler.set(-pitch, -yaw, roll);
     this._q.setFromEuler(this._euler);
     this.mesh.quaternion.multiply(this._q);
     this.mesh.quaternion.normalize();

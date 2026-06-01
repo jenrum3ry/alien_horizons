@@ -266,19 +266,22 @@ export class Game {
     }
     let best = this.lockTarget;
     // Slight stickiness: an existing lock must be beaten by a clearly better one.
+    // A *new* candidate must also clear the acquisition cone (s > lockConeCos),
+    // so a target outside the cone can never steal the lock while the current
+    // one is lingering in the release-hysteresis band.
     let bestScore = best ? this._lockScore(best) + 0.02 : this.lockConeCos;
 
     for (const e of this.enemies) {
       if (!e.alive) continue;
       const s = this._lockScore(e);
-      if (s > bestScore) {
+      if (s > bestScore && s > this.lockConeCos) {
         bestScore = s;
         best = e;
       }
     }
     if (this.mothership && this.mothership.alive) {
       const s = this._lockScore(this.mothership);
-      if (s > bestScore) {
+      if (s > bestScore && s > this.lockConeCos) {
         bestScore = s;
         best = this.mothership;
       }

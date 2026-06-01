@@ -46,13 +46,19 @@ export class EnemySpawner {
       }
     }
 
-    // Reinforcements: top the field back up to the minimum on an interval.
+    // Reinforcements: top the field back up to the minimum on a steady interval.
     if (this.sustainMin > 0) {
-      this._sustainTimer -= dt;
-      if (this._sustainTimer <= 0 && this.enemies.length < this.sustainMin) {
-        const need = Math.min(2, this.sustainMin - this.enemies.length);
-        for (let i = 0; i < need; i++) this._spawnReinforcement();
+      if (this.enemies.length >= this.sustainMin) {
+        // Field is full — hold the timer so pacing stays consistent (and it
+        // can't drift to large negative values) before the next drop.
         this._sustainTimer = this.sustainInterval;
+      } else {
+        this._sustainTimer -= dt;
+        if (this._sustainTimer <= 0) {
+          const need = Math.min(2, this.sustainMin - this.enemies.length);
+          for (let i = 0; i < need; i++) this._spawnReinforcement();
+          this._sustainTimer = this.sustainInterval;
+        }
       }
     }
   }

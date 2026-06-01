@@ -12,13 +12,17 @@ export class PlayerShip extends Entity {
     // Flight tuning.
     this.baseThrust = 220;
     this.boostThrust = 520;
-    this.maxSpeed = 420;
-    this.boostMaxSpeed = 720;
-    this.drag = 0.6; // per second linear damping factor
-    this.pitchRate = 1.6;
-    this.yawRate = 1.4;
-    this.rollRate = 2.2;
-    this.mouseSensitivity = 0.0016;
+    this.maxSpeed = 360;
+    this.boostMaxSpeed = 640;
+    this.drag = 0.7; // per second linear damping factor
+    // Analog steering turn rates (radians/second) — applied dt-scaled.
+    this.pitchRate = 1.9;
+    this.yawRate = 1.7;
+    this.rollRate = 2.4;
+    this.mouseSensitivity = 0.0022; // mouse-look: radians per pixel
+    // Smoothing of the steering input for a less twitchy, weightier feel.
+    this._smYaw = 0;
+    this._smPitch = 0;
 
     // Shields / hull.
     this.maxShield = 60;
@@ -46,6 +50,8 @@ export class PlayerShip extends Entity {
     this.velocity.set(0, 0, 0);
     this.speed = 0;
     this.boostLevel = 0;
+    this._smYaw = 0;
+    this._smPitch = 0;
     this.mesh.position.copy(position || new THREE.Vector3(0, 0, 0));
     this.mesh.quaternion.identity();
   }
@@ -53,14 +59,23 @@ export class PlayerShip extends Entity {
   // control: object from Input.consume()
   update(dt, control) {
     // --- Rotation ---
-    const mYaw = control.yaw * this.mouseSensitivity;
-    const mPitch = control.pitch * this.mouseSensitivity;
+    // Analog steering (keys / touch stick): smoothed, applied as a turn rate.
+    const sYaw = control.steerYaw || 0;
+    const sPitch = control.steerPitch || 0;
+    const k = 1 - Math.pow(0.0001, dt); // smoothing toward target deflection
+    this._smYaw += (sYaw - this._smYaw) * k;
+    this._smPitch += (sPitch - this._smPitch) * k;
+
+    // Mouse-look (desktop): raw pixel deltas, applied directly (frame-rate
+    // independent because it's a one-shot delta, not a held rate).
+    const lookYaw = (control.lookDX || 0) * this.mouseSensitivity;
+    const lookPitch = (control.lookDY || 0) * this.mouseSensitivity;
+
+    const yaw = this._smYaw * this.yawRate * dt + lookYaw;
+    const pitch = this._smPitch * this.pitchRate * dt + lookPitch;
+
     // Apply as local rotations: pitch (X), yaw (Y), roll (Z).
-    this._euler.set(
-      -mPitch * this.pitchRate,
-      -mYaw * this.yawRate,
-      control.roll * this.rollRate * dt
-    );
+    this._euler.set(-pitch, -yaw, control.roll * this.rollRate * dt);
     this._q.setFromEuler(this._euler);
     this.mesh.quaternion.multiply(this._q);
     this.mesh.quaternion.normalize();

@@ -65,29 +65,27 @@ export class Input {
   }
 
   // Snapshot the per-tick control state and reset accumulated mouse deltas.
+  // Two rotation channels: `lookDX/lookDY` are raw mouse pixel deltas (applied
+  // directly, mouse-look style), and `steerYaw/steerPitch` are analog axes in
+  // -1..1 (applied as a dt-scaled turn rate). PlayerShip combines them.
   consume() {
     const state = {
-      // Rotational intent (-1..1)
-      pitch: 0,
-      yaw: 0,
+      steerYaw: 0,
+      steerPitch: 0,
       roll: 0,
-      // Throttle / boost / brake
       throttle: 0,
       boost: this.has('ShiftLeft') || this.has('ShiftRight'),
       brake: this.has('Space'),
       fire: this.firePrimary,
-      mouseDX: this.mouseDX,
-      mouseDY: this.mouseDY,
+      lookDX: this.mouseDX,
+      lookDY: this.mouseDY,
     };
 
-    // Mouse steers pitch/yaw; keys are an alternative/augment.
-    state.yaw += this.mouseDX;
-    state.pitch += this.mouseDY;
-
-    if (this.has('KeyW')) state.pitch -= 100; // nose down (look-style: W pitches down)
-    if (this.has('KeyS')) state.pitch += 100;
-    if (this.has('KeyA')) state.yaw -= 100;
-    if (this.has('KeyD')) state.yaw += 100;
+    // Keyboard steering axes (held = full deflection).
+    if (this.has('KeyW')) state.steerPitch -= 1; // nose down
+    if (this.has('KeyS')) state.steerPitch += 1; // nose up
+    if (this.has('KeyA')) state.steerYaw -= 1;
+    if (this.has('KeyD')) state.steerYaw += 1;
     if (this.has('KeyQ')) state.roll -= 1;
     if (this.has('KeyE')) state.roll += 1;
 

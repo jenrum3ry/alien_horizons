@@ -145,19 +145,20 @@ export class TouchInput {
   exitPointerLock() {}
 
   // Same control shape as Input.consume(). Quadratic response on the stick for
-  // finer control near centre; matches keyboard's ±100 range at full deflection.
+  // finer control near centre. The joystick maps to analog steer axes (-1..1);
+  // there is no mouse-look channel on touch.
   consume() {
-    const curve = (v) => v * Math.abs(v) * 100;
+    const curve = (v) => v * Math.abs(v); // -1..1, eased toward centre
     return {
-      pitch: curve(this._jy),
-      yaw: curve(this._jx),
+      steerPitch: curve(this._jy),
+      steerYaw: curve(this._jx),
       roll: (this._rollR ? 1 : 0) - (this._rollL ? 1 : 0),
       throttle: 0,
       boost: this._boost,
       brake: this._brake,
       fire: this._fire,
-      mouseDX: 0,
-      mouseDY: 0,
+      lookDX: 0,
+      lookDY: 0,
     };
   }
 }

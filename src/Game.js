@@ -47,6 +47,7 @@ export class Game {
     // Systems
     this.weapons = new WeaponSystem(this.scene.scene);
     this.spawner = new EnemySpawner(this.scene.scene, this.enemies);
+    this.spawner.player = this.player; // spawn contacts ahead of the player
     this.missions = new MissionManager();
 
     // UI

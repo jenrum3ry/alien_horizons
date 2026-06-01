@@ -144,7 +144,9 @@ export class Game {
     this.player.reset(new THREE.Vector3(0, 60, 300));
     this.chaseCam.reset();
     this.lockTarget = null;
-    this.spawner.load(mission.waves);
+    // Keep a minimum number of aliens on the field (reinforcements) so there's
+    // always a target; missions can override via `sustain`.
+    this.spawner.load(mission.waves, mission.sustain ?? 4);
 
     // Mothership for the boss mission.
     if (this.mothership) {

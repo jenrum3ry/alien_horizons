@@ -135,8 +135,10 @@ export class HUD {
     camera.getWorldDirection(this._camDir);
 
     const drawOne = (worldPos, color, size) => {
-      // "Behind" via camera-forward dot, not projected z (objects past the far
-      // plane also have z > 1, which would falsely flip the arrow direction).
+      // "Behind" via a camera-direction dot, not projected z (objects past the
+      // far plane also have z > 1, which would falsely flip the arrow direction).
+      // For this camera getWorldDirection() points along the view (forward),
+      // verified empirically, so a target with a negative dot is behind it.
       this._toTarget.copy(worldPos).sub(camera.position);
       const behind = this._camDir.dot(this._toTarget) < 0;
       this._proj.copy(worldPos).project(camera);

@@ -65,7 +65,13 @@ export class TouchInput {
       this.base.style.top = e.clientY + 'px';
       this.base.classList.remove('hidden');
       this._updateKnob(0, 0);
-      this.zone.setPointerCapture(e.pointerId);
+      // Capture so we keep getting moves even as the finger leaves the zone.
+      // Can throw InvalidPointerId if the pointer is already gone — ignore.
+      try {
+        this.zone.setPointerCapture(e.pointerId);
+      } catch (err) {
+        /* pointer no longer active */
+      }
       e.preventDefault();
     });
     this.zone.addEventListener('pointermove', (e) => {
@@ -91,15 +97,19 @@ export class TouchInput {
     };
     this.zone.addEventListener('pointerup', endJoy);
     this.zone.addEventListener('pointercancel', endJoy);
+    // System gestures / interruptions may steal the pointer without firing
+    // up/cancel — reset on capture loss so the stick never sticks.
+    this.zone.addEventListener('lostpointercapture', endJoy);
 
     // --- Hold buttons ---
+    // No pointer capture here: that lets pointerleave fire so sliding a finger
+    // off a button cancels its action.
     const map = { fire: '_fire', boost: '_boost', brake: '_brake', rollL: '_rollL', rollR: '_rollR' };
     for (const btn of this.el.querySelectorAll('[data-btn]')) {
       const prop = map[btn.dataset.btn];
       const down = (e) => {
         this[prop] = true;
         btn.classList.add('active');
-        btn.setPointerCapture?.(e.pointerId);
         e.preventDefault();
       };
       const up = (e) => {

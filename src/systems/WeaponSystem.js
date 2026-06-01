@@ -3,6 +3,10 @@ import { Pool } from '../core/Pools.js';
 import { Projectile } from '../entities/Projectile.js';
 import { Explosion } from '../entities/Explosion.js';
 
+// Pre-allocated temporaries reused by the player firing loop to avoid GC churn.
+const _tempDir = new THREE.Vector3();
+const _tempMuzzle = new THREE.Vector3();
+
 // Owns projectile + explosion pools and the player's fire-rate gate.
 export class WeaponSystem {
   constructor(scene) {
@@ -34,9 +38,17 @@ export class WeaponSystem {
   }
 
   reset() {
-    this.projectiles.update(() => true);
-    this.explosions.update(() => true);
-    this.projectiles.forEach((p) => p.deactivate());
+    // Release and hide every active projectile/explosion so none linger in the
+    // scene across a mission reset or transition.
+    this.projectiles.update((p) => {
+      p.deactivate();
+      return true;
+    });
+    this.explosions.update((e) => {
+      e.alive = false;
+      e.points.visible = false;
+      return true;
+    });
     this._playerCd = 0;
   }
 
@@ -54,11 +66,10 @@ export class WeaponSystem {
     this._playerCd -= dt;
     if (this._playerCd > 0) return false;
     this._playerCd = 1 / this.playerFireRate;
-    const dir = new THREE.Vector3();
-    player.getForward(dir);
+    player.getForward(_tempDir);
     for (const m of player.muzzles) {
-      const origin = m.clone().applyQuaternion(player.quaternion).add(player.position);
-      this.fire(origin, dir, 'player');
+      _tempMuzzle.copy(m).applyQuaternion(player.quaternion).add(player.position);
+      this.fire(_tempMuzzle, _tempDir, 'player');
     }
     return true;
   }

@@ -54,6 +54,7 @@ export class HUD {
 
     this._lastHull = 100;
     this._tmp = new THREE.Vector3();
+    this._tmpQ = new THREE.Quaternion();
   }
 
   show() {
@@ -123,7 +124,7 @@ export class HUD {
     ctx.stroke();
 
     // Player heading basis: project enemies into player's local XZ plane.
-    const inv = player.mesh.quaternion.clone().invert();
+    const inv = this._tmpQ.copy(player.mesh.quaternion).invert();
     const scale = (C - 8) / 1400; // world units to radar px (clamped range)
 
     const plot = (worldPos, color, size) => {

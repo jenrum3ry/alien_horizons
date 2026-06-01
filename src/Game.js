@@ -249,6 +249,14 @@ export class Game {
     // Camera + starfield follow even outside PLAYING for a live backdrop.
     if (this.state === S.PLAYING) {
       this.chaseCam.update(dt, this.player.mesh, this.player.boostLevel);
+      this.hud.update({
+        player: this.player,
+        earth: this.earth,
+        enemies: this.enemies,
+        mission: this.missions,
+        camera: this.scene.camera,
+        mothership: this.mothership,
+      });
     } else {
       // Slow orbit of Earth behind menus.
       const t = performance.now() / 1000;

@@ -22,7 +22,7 @@ export class SceneSetup {
     this.camera = new THREE.PerspectiveCamera(
       62,
       window.innerWidth / window.innerHeight,
-      0.1,
+      1.0,
       200000
     );
     this.camera.position.set(0, 40, 160);

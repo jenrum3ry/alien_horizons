@@ -6,6 +6,7 @@ import { buildMothership } from './ShipFactory.js';
 // Slowly advances toward Earth and bombards it while alive.
 const _toPlayer = new THREE.Vector3();
 const _fwd = new THREE.Vector3();
+const _toEarth = new THREE.Vector3();
 
 class Turret {
   constructor(mesh, localPos) {
@@ -84,8 +85,8 @@ export class Mothership extends Entity {
     // Slow menacing spin + advance toward Earth.
     this.mesh.rotation.y += dt * 0.05;
     if (earth) {
-      const dir = earth.center.clone().sub(this.position).normalize();
-      this.mesh.position.addScaledVector(dir, this.speed * dt);
+      _toEarth.copy(earth.center).sub(this.position).normalize();
+      this.mesh.position.addScaledVector(_toEarth, this.speed * dt);
     }
 
     // Keep turret world positions current for collision tests.

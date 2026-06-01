@@ -12,6 +12,8 @@ const _desiredQ = new THREE.Quaternion();
 const _up = new THREE.Vector3(0, 1, 0);
 const _m = new THREE.Matrix4();
 const _strafe = new THREE.Vector3();
+const _negatedTarget = new THREE.Vector3();
+const _zero = new THREE.Vector3(0, 0, 0);
 
 export class EnemyShip extends Entity {
   constructor(variant = 'fighter') {
@@ -68,7 +70,8 @@ export class EnemyShip extends Entity {
     }
 
     // Steer toward desired direction (slerp the quaternion).
-    _m.lookAt(new THREE.Vector3(0, 0, 0), _toTarget.clone().multiplyScalar(-1), _up);
+    _negatedTarget.copy(_toTarget).negate();
+    _m.lookAt(_zero, _negatedTarget, _up);
     _desiredQ.setFromRotationMatrix(_m);
     this.mesh.quaternion.slerp(_desiredQ, Math.min(1, this.turnRate * dt));
 

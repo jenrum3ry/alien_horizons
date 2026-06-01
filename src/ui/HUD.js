@@ -8,6 +8,7 @@ export class HUD {
     this.el = document.createElement('div');
     this.el.className = 'hud hidden';
     this.el.innerHTML = `
+      <canvas class="markers" data-markers></canvas>
       <div class="crosshair"></div>
       <div class="vignette"></div>
 
@@ -52,9 +53,20 @@ export class HUD {
     this.radar = this.el.querySelector('[data-radar]');
     this.radarCtx = this.radar.getContext('2d');
 
+    this.markers = this.el.querySelector('[data-markers]');
+    this.markersCtx = this.markers.getContext('2d');
+    this._resizeMarkers();
+    window.addEventListener('resize', () => this._resizeMarkers());
+
     this._lastHull = 100;
     this._tmp = new THREE.Vector3();
     this._tmpQ = new THREE.Quaternion();
+    this._proj = new THREE.Vector3();
+  }
+
+  _resizeMarkers() {
+    this.markers.width = window.innerWidth;
+    this.markers.height = window.innerHeight;
   }
 
   show() {
@@ -103,7 +115,70 @@ export class HUD {
 
     this.enemiesEl.textContent = 'Contacts: ' + enemies.length;
 
+    this._drawMarkers(enemies, mothership, camera);
     this._drawRadar(player, enemies, earth, camera, mothership);
+  }
+
+  // On-screen brackets for visible enemies and edge arrows pointing toward
+  // off-screen ones, so the player can always locate targets.
+  _drawMarkers(enemies, mothership, camera) {
+    const ctx = this.markersCtx;
+    const W = this.markers.width;
+    const H = this.markers.height;
+    ctx.clearRect(0, 0, W, H);
+    const cx = W / 2;
+    const cy = H / 2;
+    const margin = 46;
+
+    const drawOne = (worldPos, color, size) => {
+      this._proj.copy(worldPos).project(camera);
+      const behind = this._proj.z > 1;
+      let sx = (this._proj.x * 0.5 + 0.5) * W;
+      let sy = (-this._proj.y * 0.5 + 0.5) * H;
+      const onScreen = !behind && sx >= 0 && sx <= W && sy >= 0 && sy <= H;
+
+      if (onScreen) {
+        // Target bracket.
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        const s = size;
+        ctx.beginPath();
+        // four corner ticks
+        ctx.moveTo(sx - s, sy - s + 5); ctx.lineTo(sx - s, sy - s); ctx.lineTo(sx - s + 5, sy - s);
+        ctx.moveTo(sx + s - 5, sy - s); ctx.lineTo(sx + s, sy - s); ctx.lineTo(sx + s, sy - s + 5);
+        ctx.moveTo(sx + s, sy + s - 5); ctx.lineTo(sx + s, sy + s); ctx.lineTo(sx + s - 5, sy + s);
+        ctx.moveTo(sx - s + 5, sy + s); ctx.lineTo(sx - s, sy + s); ctx.lineTo(sx - s, sy + s - 5);
+        ctx.stroke();
+      } else {
+        // Off-screen: clamp a direction arrow to the screen edge.
+        let dx = sx - cx;
+        let dy = sy - cy;
+        if (behind) {
+          dx = -dx;
+          dy = -dy;
+        }
+        const ang = Math.atan2(dy, dx);
+        const ex = cx + Math.cos(ang) * (cx - margin);
+        const ey = cy + Math.sin(ang) * (cy - margin);
+        ctx.save();
+        ctx.translate(ex, ey);
+        ctx.rotate(ang);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(12, 0);
+        ctx.lineTo(-8, -7);
+        ctx.lineTo(-8, 7);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+    };
+
+    for (const e of enemies) if (e.alive) drawOne(e.position, '#ff4d63', 20);
+    if (mothership && mothership.alive) {
+      this._tmp.setFromMatrixPosition(mothership.mesh.matrixWorld);
+      drawOne(this._tmp, '#ff66cc', 60);
+    }
   }
 
   _drawRadar(player, enemies, earth, camera, mothership) {

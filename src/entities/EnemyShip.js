@@ -33,8 +33,9 @@ export class EnemyShip extends Entity {
     this._fireCd = Math.random() * 1.5;
     this.glow = mesh.userData.glow || [];
     this.muzzles = mesh.userData.muzzles || [];
-    // Each fighter picks a role; ~40% go after Earth.
-    this.role = Math.random() < 0.4 ? 'strike' : 'hunt';
+    // Each fighter picks a role; ~25% go after Earth, the rest engage the player
+    // so there's always something to dogfight nearby.
+    this.role = Math.random() < 0.25 ? 'strike' : 'hunt';
     this._strafePhase = Math.random() * Math.PI * 2;
   }
 

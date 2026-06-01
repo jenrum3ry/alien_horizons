@@ -42,17 +42,30 @@ export class EnemySpawner {
   _spawnWave(wave, earth) {
     const count = wave.count || 3;
     const variant = wave.variant || 'fighter';
+
+    // Spawn in a loose cone ahead of the player so contacts appear on-screen,
+    // not behind or kilometres away. Falls back to a fixed forward area.
+    const player = this.player;
+    const origin = player ? player.position : new THREE.Vector3(0, 60, 300);
+    const fwd = new THREE.Vector3(0, 0, -1);
+    const right = new THREE.Vector3(1, 0, 0);
+    const up = new THREE.Vector3(0, 1, 0);
+    if (player) {
+      fwd.applyQuaternion(player.mesh.quaternion);
+      right.applyQuaternion(player.mesh.quaternion);
+      up.applyQuaternion(player.mesh.quaternion);
+    }
+
     for (let i = 0; i < count; i++) {
       const e = new EnemyShip(variant);
-      // Spawn in an arc out in front / around the player area, away from origin.
-      const angle = (i / count) * Math.PI * 2 + Math.random();
-      const radius = 600 + Math.random() * 600;
-      const height = (Math.random() - 0.5) * 400;
-      e.mesh.position.set(
-        Math.cos(angle) * radius,
-        height + 100,
-        Math.sin(angle) * radius - 400
-      );
+      const dist = 380 + Math.random() * 320; // 380–700 units ahead
+      const spreadX = (i / Math.max(1, count - 1) - 0.5) * 520 + (Math.random() - 0.5) * 160;
+      const spreadY = (Math.random() - 0.5) * 280;
+      e.mesh.position
+        .copy(origin)
+        .addScaledVector(fwd, dist)
+        .addScaledVector(right, spreadX)
+        .addScaledVector(up, spreadY);
       this.scene.add(e.mesh);
       this.enemies.push(e);
       this.totalSpawned++;

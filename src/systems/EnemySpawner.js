@@ -58,11 +58,11 @@ export class EnemySpawner {
 
     for (let i = 0; i < count; i++) {
       const e = new EnemyShip(variant);
-      const dist = 380 + Math.random() * 320; // 380–700 units ahead
+      const dist = 320 + Math.random() * 260; // 320–580 units ahead
       // Spread fighters across the cone; a lone fighter spawns centred (0.5).
       const ratio = count > 1 ? i / (count - 1) : 0.5;
-      const spreadX = (ratio - 0.5) * 520 + (Math.random() - 0.5) * 160;
-      const spreadY = (Math.random() - 0.5) * 280;
+      const spreadX = (ratio - 0.5) * 440 + (Math.random() - 0.5) * 140;
+      const spreadY = (Math.random() - 0.5) * 240;
       e.mesh.position
         .copy(origin)
         .addScaledVector(fwd, dist)

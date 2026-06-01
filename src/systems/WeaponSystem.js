@@ -61,14 +61,18 @@ export class WeaponSystem {
     return p;
   }
 
-  // Player firing from both muzzles, alternating, rate-limited.
-  tryFirePlayer(player, dt) {
+  // Player firing from both muzzles, rate-limited. Each bolt is aimed at
+  // `aimPoint` (the locked target, or a point under the crosshair) so shots
+  // converge where the player is looking instead of along the ship's nose —
+  // which is what makes 3rd-person aiming feel "off".
+  tryFirePlayer(player, dt, aimPoint) {
     this._playerCd -= dt;
     if (this._playerCd > 0) return false;
     this._playerCd = 1 / this.playerFireRate;
-    player.getForward(_tempDir);
     for (const m of player.muzzles) {
       _tempMuzzle.copy(m).applyQuaternion(player.quaternion).add(player.position);
+      if (aimPoint) _tempDir.copy(aimPoint).sub(_tempMuzzle).normalize();
+      else player.getForward(_tempDir);
       this.fire(_tempMuzzle, _tempDir, 'player');
     }
     return true;

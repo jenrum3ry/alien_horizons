@@ -62,8 +62,8 @@ export class HUD {
     this._tmp = new THREE.Vector3();
     this._tmpQ = new THREE.Quaternion();
     this._proj = new THREE.Vector3();
-    this._camDir = new THREE.Vector3();
     this._toTarget = new THREE.Vector3();
+    this._invView = new THREE.Matrix4();
   }
 
   _resizeMarkers() {
@@ -79,7 +79,8 @@ export class HUD {
   }
 
   update(state) {
-    const { player, earth, enemies, mission, camera, mothership } = state;
+    const { player, earth, enemies, mission, camera, mothership, lockTarget } = state;
+    this._lockTarget = lockTarget || null;
 
     // Objective
     if (mission) {
@@ -132,15 +133,17 @@ export class HUD {
     const cy = H / 2;
     const margin = 46;
 
-    camera.getWorldDirection(this._camDir);
+    // View-space z is the robust "behind" test: the camera looks down -z in its
+    // own space, so any point with view-space z > 0 is behind it. This avoids
+    // getWorldDirection(), which is unreliable here because the chase camera
+    // rewrites its `up` vector each frame. Refresh the inverse ourselves since
+    // the renderer hasn't recomputed it yet at HUD-update time.
+    camera.updateMatrixWorld();
+    camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+    this._invView.copy(camera.matrixWorldInverse);
 
     const drawOne = (worldPos, color, size) => {
-      // "Behind" via a camera-direction dot, not projected z (objects past the
-      // far plane also have z > 1, which would falsely flip the arrow direction).
-      // For this camera getWorldDirection() points along the view (forward),
-      // verified empirically, so a target with a negative dot is behind it.
-      this._toTarget.copy(worldPos).sub(camera.position);
-      const behind = this._camDir.dot(this._toTarget) < 0;
+      const behind = this._toTarget.copy(worldPos).applyMatrix4(this._invView).z > 0;
       this._proj.copy(worldPos).project(camera);
       let sx = (this._proj.x * 0.5 + 0.5) * W;
       let sy = (-this._proj.y * 0.5 + 0.5) * H;
@@ -187,6 +190,32 @@ export class HUD {
     if (mothership && mothership.alive) {
       this._tmp.setFromMatrixPosition(mothership.mesh.matrixWorld);
       drawOne(this._tmp, '#ff66cc', 60);
+    }
+
+    // Lock-on reticle: a bright rotating box + "LOCK" on the acquired target.
+    const lock = this._lockTarget;
+    if (lock && lock.alive) {
+      const inFront = this._toTarget.copy(lock.position).applyMatrix4(this._invView).z < 0;
+      if (inFront) {
+        this._proj.copy(lock.position).project(camera);
+        const lx = (this._proj.x * 0.5 + 0.5) * W;
+        const ly = (-this._proj.y * 0.5 + 0.5) * H;
+        const s = 30;
+        ctx.save();
+        ctx.translate(lx, ly);
+        ctx.rotate(performance.now() / 600);
+        ctx.strokeStyle = '#7CFFB0';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(-s, -s, s * 2, s * 2);
+        ctx.restore();
+        ctx.fillStyle = '#7CFFB0';
+        ctx.beginPath();
+        ctx.arc(lx, ly, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = 'bold 12px Segoe UI, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('LOCK', lx, ly - s - 8);
+      }
     }
   }
 
